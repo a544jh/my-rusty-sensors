@@ -1,0 +1,6 @@
+[package]
+name = "my-rusty-sensors"
+version = "0.1.0"
+authors = ["a544jh <axel.wikstrom@gmail.com>"]
+
+[dependencies]
