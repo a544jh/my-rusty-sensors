@@ -1,5 +1,6 @@
 use super::message;
 use super::message::Sensor::*;
+use super::message::Payload::*;
 // use num::*;
 
 pub fn encode(msg: &message::Message) -> String {
@@ -56,6 +57,32 @@ mod tests {
     }
 
     #[test]
+    fn can_encode_last_sensor() {
+        let msg = message::Message {
+            node_id: 2,
+            child_sensor_id: 3,
+            command: message::Command::Presentation(WaterQuality),
+            ack: false,
+            payload: message::PayloadType::Int(5),
+        };
+        let msg_str = encode(&msg);
+        assert_eq!(msg_str, "2;3;0;0;39;5\n");
+    }
+
+    #[test]
+    fn can_encode_last_payload() {
+        let msg = message::Message {
+            node_id: 4,
+            child_sensor_id: 2,
+            command: message::Command::Set(PowerFactor),
+            ack: true,
+            payload: message::PayloadType::Float(2.5),
+        };
+        let msg_str = encode(&msg);
+        assert_eq!(msg_str, "4;2;1;1;56;2.5\n");
+    }
+
+    #[test]
     fn can_decode() {
         let msg_str = "0;0;0;0;0;0\n";
         let msg = decode(&msg_str);
@@ -65,6 +92,34 @@ mod tests {
             command: message::Command::Presentation(Door),
             ack: false,
             payload: message::PayloadType::Int(0),
+        };
+        assert_eq!(msg, expected);
+    }
+
+    #[test]
+    fn can_decode_last_sensor() {
+        let msg_str = "2;3;0;0;39;5\n";
+        let msg = decode(&msg_str);
+        let expected = message::Message {
+            node_id: 2,
+            child_sensor_id: 3,
+            command: message::Command::Presentation(WaterQuality),
+            ack: false,
+            payload: message::PayloadType::Int(5),
+        };
+        assert_eq!(msg, expected);
+    }
+
+    #[test]
+    fn can_decode_last_payload() {
+        let msg_str = "4;2;1;1;56;2.5\n";
+        let msg = decode(&msg_str);
+        let expected = message::Message {
+            node_id: 4,
+            child_sensor_id: 2,
+            command: message::Command::Set(PowerFactor),
+            ack: true,
+            payload: message::PayloadType::Float(2.5),
         };
         assert_eq!(msg, expected);
     }

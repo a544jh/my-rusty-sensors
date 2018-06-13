@@ -202,7 +202,7 @@ pub enum Payload {
     WaterEc,
     ReactivePower,
     ApparentPower,
-    PoweFactor,
+    PowerFactor,
 }
 
 #[derive(Debug, PartialEq, ToPrimitive, FromPrimitive)]
