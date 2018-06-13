@@ -9,11 +9,11 @@ pub struct Message {
     pub child_sensor_id: u32,
     pub command: Command,
     pub ack: bool,
-    pub payload: Payload,
+    pub payload: PayloadType,
 }
 
 #[derive(Debug, PartialEq)]
-pub enum Payload {
+pub enum PayloadType {
     Int(u32),
     Float(f32),
     Str(String),
@@ -21,46 +21,66 @@ pub enum Payload {
 
 #[derive(Debug, PartialEq)]
 pub enum Command {
-    Presentation(SensorType),
-    Set(PayloadType),
-    Req(PayloadType),
-    Internal(InternalType),
+    Presentation(Sensor),
+    Set(Payload),
+    Req(Payload),
+    Internal(Internal),
     Stream,
 }
 
 impl Command {
-    pub fn from(ints: (u32, u32)) -> Command {
+    pub fn decode(ints: (u32, u32)) -> Command {
         let (cmd, cmd_type) = ints;
 
         match cmd {
             0 => {
-                let sens = SensorType::from_u32(cmd_type).unwrap();
-                Command::Presentation(sens)
+                let typ = FromPrimitive::from_u32(cmd_type).unwrap();
+                Command::Presentation(typ)
             }
             1 => {
-                let payl = PayloadType::from_u32(cmd_type).unwrap();
-                Command::Set(payl)
+                let typ = FromPrimitive::from_u32(cmd_type).unwrap();
+                Command::Set(typ)
             }
+            2 => {
+                let typ = FromPrimitive::from_u32(cmd_type).unwrap();
+                Command::Req(typ)
+            }
+            3 => {
+                let typ = FromPrimitive::from_u32(cmd_type).unwrap();
+                Command::Internal(typ)
+            }
+            4 => Command::Stream,
             _ => panic!("Invalid message type")
         }
 
         // Command::Presentation(SensorType::Door)
     }
 
-    pub fn to(&self) -> (u32, u32) {
+    pub fn encode(&self) -> (u32, u32) {
         match self {
-            Command::Presentation(sens) => {
-                let i = sens.to_u32().unwrap();
+            Command::Presentation(typ) => {
+                let i = typ.to_u32().unwrap();
                 (0,i)
             }
-            Command::Set(_) => (1,1),
-            _ => panic!("Not yet implemented")
+            Command::Set(typ) => {
+                let i = typ.to_u32().unwrap();
+                (1,i)
+            }
+            Command::Req(typ) => {
+                let i = typ.to_u32().unwrap();
+                (2,i)
+            }
+            Command::Internal(typ) => {
+                let i = typ.to_u32().unwrap();
+                (3,i)
+            }
+            Command::Stream => (4,0)
         }
     }
 }
 
 #[derive(Debug, PartialEq, ToPrimitive, FromPrimitive)]
-pub enum SensorType {
+pub enum Sensor {
     Door,
     Motion,
     Smoke,
@@ -68,7 +88,7 @@ pub enum SensorType {
 }
 
 #[derive(Debug, PartialEq, ToPrimitive, FromPrimitive)]
-pub enum PayloadType {
+pub enum Payload {
     Temperature,
     Humidity,
     Status,
@@ -76,7 +96,7 @@ pub enum PayloadType {
 }
 
 #[derive(Debug, PartialEq, ToPrimitive, FromPrimitive)]
-pub enum InternalType {
+pub enum Internal {
     BatteryLevel,
     Time,
     Version,

@@ -1,11 +1,11 @@
 use super::message;
-use super::message::SensorType::*;
+use super::message::Sensor::*;
 // use num::*;
 
 pub fn encode(msg: &message::Message) -> String {
     //let i :u32 = *msg as u32;
     let command = &msg.command;
-    let (i, _) = command.to();
+    let (i, _) = command.encode();
     i.to_string()
 }
 
@@ -14,9 +14,9 @@ fn decode(msg_str: &str) -> message::Message {
     message::Message {
         node_id: 0,
         child_sensor_id: 0,
-        command: message::Command::from((i, 0)),
+        command: message::Command::decode((i, 0)),
         ack: false,
-        payload: message::Payload::Int(0),
+        payload: message::PayloadType::Int(0),
     }
 }
 
@@ -32,7 +32,7 @@ mod tests {
             child_sensor_id: 0,
             command: message::Command::Presentation(Door),
             ack: false,
-            payload: message::Payload::Int(0),
+            payload: message::PayloadType::Int(0),
         };
         let msg_str = encode(&msg);
         assert_eq!(msg_str, "0");
@@ -47,7 +47,7 @@ mod tests {
             child_sensor_id: 0,
             command: message::Command::Presentation(Door),
             ack: false,
-            payload: message::Payload::Int(0),
+            payload: message::PayloadType::Int(0),
         };
         assert_eq!(msg, expected);
     }

@@ -5,7 +5,7 @@ extern crate num_derive;
 pub mod gateway;
 
 use gateway::message;
-use gateway::message::SensorType::*;
+use gateway::message::Sensor::*;
 use gateway::serial;
 
 fn main() {
@@ -15,7 +15,7 @@ fn main() {
         child_sensor_id: 0,
         command: message::Command::Presentation(Door),
         ack: false,
-        payload: message::Payload::Int(0),
+        payload: message::PayloadType::Int(0),
     };
     let msg_str = serial::encode(&msg);
     println!("{:?}", msg);
