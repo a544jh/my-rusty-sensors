@@ -1,5 +1,5 @@
-#[derive(Debug, Copy, Clone, FromPrimitive, PartialEq)]
+#[derive(Debug, ToPrimitive, FromPrimitive, PartialEq)]
 pub enum MessageType {
-    Test1,
+    Test1 = 1,
     Test2,
 }
