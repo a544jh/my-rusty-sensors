@@ -1,4 +1,4 @@
-[root]
+[[package]]
 name = "my-rusty-sensors"
 version = "0.1.0"
 
