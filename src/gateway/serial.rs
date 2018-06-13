@@ -1,15 +1,23 @@
 use super::message;
-use num::*;
+use super::message::SensorType::*;
+// use num::*;
 
-pub fn encode(msg: &message::MessageType) -> String {
+pub fn encode(msg: &message::Message) -> String {
     //let i :u32 = *msg as u32;
-    let i: u32 = (*msg).to_u32().unwrap();
+    let command = &msg.command;
+    let (i, _) = command.to();
     i.to_string()
 }
 
-fn decode(msg_str: &str) -> message::MessageType {
+fn decode(msg_str: &str) -> message::Message {
     let i: u32 = msg_str.parse().unwrap();
-    FromPrimitive::from_u32(i).unwrap()
+    message::Message {
+        node_id: 0,
+        child_sensor_id: 0,
+        command: message::Command::from((i, 0)),
+        ack: false,
+        payload: message::Payload::Int(0),
+    }
 }
 
 #[cfg(test)]
@@ -19,15 +27,28 @@ mod tests {
 
     #[test]
     fn can_encode() {
-        let msg = message::MessageType::Test1;
+        let msg = message::Message {
+            node_id: 0,
+            child_sensor_id: 0,
+            command: message::Command::Presentation(Door),
+            ack: false,
+            payload: message::Payload::Int(0),
+        };
         let msg_str = encode(&msg);
-        assert_eq!(msg_str, "1");
+        assert_eq!(msg_str, "0");
     }
 
     #[test]
     fn can_decode() {
-        let msg_str = "1";
+        let msg_str = "0";
         let msg = decode(&msg_str);
-        assert_eq!(msg, message::MessageType::Test1);
+        let expected = message::Message {
+            node_id: 0,
+            child_sensor_id: 0,
+            command: message::Command::Presentation(Door),
+            ack: false,
+            payload: message::Payload::Int(0),
+        };
+        assert_eq!(msg, expected);
     }
 }
