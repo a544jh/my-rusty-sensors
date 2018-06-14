@@ -1,7 +1,7 @@
 use super::message;
-use super::message::Sensor::*;
 use super::message::Payload::*;
-// use num::*;
+use super::message::Sensor::*;
+use std;
 
 pub fn encode(msg: &message::Message) -> String {
     let command = &msg.command;
@@ -10,32 +10,68 @@ pub fn encode(msg: &message::Message) -> String {
         true => "1",
         false => "0",
     };
-    format!("{};{};{};{};{};{}\n",
-        msg.node_id,
-        msg.child_sensor_id,
-        cmd,
-        ack,
-        typ,
-        msg.payload,
+    format!(
+        "{};{};{};{};{};{}\n",
+        msg.node_id, msg.child_sensor_id, cmd, ack, typ, msg.payload,
     )
 }
 
-fn decode(msg_str: &str) -> message::Message {
-    let mut it = msg_str.split(";");
-    let node_id: u32 = it.next().unwrap().parse().unwrap();
-    let child_sensor_id: u32 = it.next().unwrap().parse().unwrap();
-    let cmd: u32 = it.next().unwrap().parse().unwrap();
-    let ack: u32 = it.next().unwrap().parse().unwrap();
-    let typ: u32 = it.next().unwrap().parse().unwrap();
-    let pl = it.next().unwrap().trim();
+#[derive(Debug)]
+struct MalformedStringError {
+    s: String,
+}
 
-    message::Message {
+impl MalformedStringError {
+    fn new(s: &str) -> MalformedStringError {
+        MalformedStringError { s: s.to_string() }
+    }
+}
+
+impl std::fmt::Display for MalformedStringError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Malformed string: {}", self.s)
+    }
+}
+
+impl std::error::Error for MalformedStringError {
+    fn description(&self) -> &str {
+        "Malformed string"
+    }
+}
+
+fn decode(msg_str: &str) -> Result<message::Message, MalformedStringError> {
+    let mal_err_from_opt = { || MalformedStringError::new(&msg_str) };
+    let mal_err_from_res = { |_| Err(MalformedStringError::new(&msg_str)) };
+    let mut it = msg_str.split(";");
+    let node_id: u32 = it.next()
+        .ok_or_else(mal_err_from_opt)?
+        .parse()
+        .or_else(mal_err_from_res)?;
+    let child_sensor_id: u32 = it.next()
+        .ok_or_else(mal_err_from_opt)?
+        .parse()
+        .or_else(mal_err_from_res)?;
+    let cmd: u32 = it.next()
+        .ok_or_else(mal_err_from_opt)?
+        .parse()
+        .or_else(mal_err_from_res)?;
+    let ack: u32 = it.next()
+        .ok_or_else(mal_err_from_opt)?
+        .parse()
+        .or_else(mal_err_from_res)?;
+    let typ: u32 = it.next()
+        .ok_or_else(mal_err_from_opt)?
+        .parse()
+        .or_else(mal_err_from_res)?;
+    let pl = it.next().ok_or_else(mal_err_from_opt)?.trim();
+
+    Ok(message::Message {
         node_id,
         child_sensor_id,
-        command: message::Command::decode((cmd, typ)),
-        ack: if ack != 0 {true} else {false},
+        command: message::Command::decode((cmd, typ)).ok_or_else(mal_err_from_opt)?,
+        ack: if ack != 0 { true } else { false },
         payload: message::PayloadType::decode(pl),
-    }
+    })
 }
 
 #[cfg(test)]
@@ -85,7 +121,7 @@ mod tests {
     #[test]
     fn can_decode() {
         let msg_str = "0;0;0;0;0;0\n";
-        let msg = decode(&msg_str);
+        let msg = decode(&msg_str).unwrap();
         let expected = message::Message {
             node_id: 0,
             child_sensor_id: 0,
@@ -99,7 +135,7 @@ mod tests {
     #[test]
     fn can_decode_last_sensor() {
         let msg_str = "2;3;0;0;39;5\n";
-        let msg = decode(&msg_str);
+        let msg = decode(&msg_str).unwrap();
         let expected = message::Message {
             node_id: 2,
             child_sensor_id: 3,
@@ -113,7 +149,7 @@ mod tests {
     #[test]
     fn can_decode_last_payload() {
         let msg_str = "4;2;1;1;56;2.5\n";
-        let msg = decode(&msg_str);
+        let msg = decode(&msg_str).unwrap();
         let expected = message::Message {
             node_id: 4,
             child_sensor_id: 2,
@@ -122,5 +158,15 @@ mod tests {
             payload: message::PayloadType::Float(2.5),
         };
         assert_eq!(msg, expected);
+    }
+
+    #[test]
+    fn doesnt_decode_malformed_string() {
+        let msg_str = "trait-based generics";
+        let msg = decode(msg_str);
+        match msg {
+            Ok(_) => panic!("Should return error!"),
+            Err(e) => assert_eq!(format!("{}", e), "Malformed string: trait-based generics"),
+        }
     }
 }

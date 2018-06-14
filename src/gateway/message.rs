@@ -1,4 +1,3 @@
-use num::ToPrimitive;
 use num::FromPrimitive;
 use std::fmt;
 
@@ -23,9 +22,9 @@ pub enum PayloadType {
 impl fmt::Display for PayloadType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            PayloadType::Int(i) => write!(f,"{}",i),
-            PayloadType::Float(fl) => write!(f,"{}",fl), //TODO: may need fxing
-            PayloadType::Str(s) => write!(f,"{}",s),
+            PayloadType::Int(i) => write!(f, "{}", i),
+            PayloadType::Float(fl) => write!(f, "{}", fl), //TODO: may need fxing
+            PayloadType::Str(s) => write!(f, "{}", s),
         }
     }
 }
@@ -52,55 +51,55 @@ pub enum Command {
 }
 
 impl Command {
-    pub fn decode(ints: (u32, u32)) -> Command {
+    pub fn decode(ints: (u32, u32)) -> Option<Command> {
         let (cmd, typ) = ints;
 
         match cmd {
             0 => {
-                let typ = FromPrimitive::from_u32(typ).unwrap();
-                Command::Presentation(typ)
+                FromPrimitive::from_u32(typ)
+                .map(|t| Command::Presentation(t))
             }
             1 => {
-                let typ = FromPrimitive::from_u32(typ).unwrap();
-                Command::Set(typ)
+                FromPrimitive::from_u32(typ)
+                .map(|t| Command::Set(t))
             }
             2 => {
-                let typ = FromPrimitive::from_u32(typ).unwrap();
-                Command::Req(typ)
+                FromPrimitive::from_u32(typ)
+                .map(|t| Command::Req(t))
             }
             3 => {
-                let typ = FromPrimitive::from_u32(typ).unwrap();
-                Command::Internal(typ)
+                FromPrimitive::from_u32(typ)
+                .map(|t| Command::Internal(t))
             }
-            4 => Command::Stream,
-            _ => panic!("Invalid message type")
+            4 => Some(Command::Stream),
+            _ => None,
         }
     }
 
     pub fn encode(&self) -> (u32, u32) {
         match self {
             Command::Presentation(typ) => {
-                let i = typ.to_u32().unwrap();
-                (0,i)
+                let i = *typ as u32;
+                (0, i)
             }
             Command::Set(typ) => {
-                let i = typ.to_u32().unwrap();
-                (1,i)
+                let i = *typ as u32;
+                (1, i)
             }
             Command::Req(typ) => {
-                let i = typ.to_u32().unwrap();
-                (2,i)
+                let i = *typ as u32;
+                (2, i)
             }
             Command::Internal(typ) => {
-                let i = typ.to_u32().unwrap();
-                (3,i)
+                let i = *typ as u32;
+                (3, i)
             }
-            Command::Stream => (4,0)
+            Command::Stream => (4, 0),
         }
     }
 }
 
-#[derive(Debug, PartialEq, ToPrimitive, FromPrimitive)]
+#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive)]
 pub enum Sensor {
     Door,
     Motion,
@@ -141,10 +140,10 @@ pub enum Sensor {
     Info,
     Gas,
     GPS,
-    WaterQuality
+    WaterQuality,
 }
 
-#[derive(Debug, PartialEq, ToPrimitive, FromPrimitive)]
+#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive)]
 pub enum Payload {
     Temperature,
     Humidity,
@@ -205,7 +204,7 @@ pub enum Payload {
     PowerFactor,
 }
 
-#[derive(Debug, PartialEq, ToPrimitive, FromPrimitive)]
+#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive)]
 pub enum Internal {
     BatteryLevel,
     Time,
