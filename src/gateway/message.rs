@@ -55,22 +55,10 @@ impl Command {
         let (cmd, typ) = ints;
 
         match cmd {
-            0 => {
-                FromPrimitive::from_u32(typ)
-                .map(|t| Command::Presentation(t))
-            }
-            1 => {
-                FromPrimitive::from_u32(typ)
-                .map(|t| Command::Set(t))
-            }
-            2 => {
-                FromPrimitive::from_u32(typ)
-                .map(|t| Command::Req(t))
-            }
-            3 => {
-                FromPrimitive::from_u32(typ)
-                .map(|t| Command::Internal(t))
-            }
+            0 => FromPrimitive::from_u32(typ).map(|t| Command::Presentation(t)),
+            1 => FromPrimitive::from_u32(typ).map(|t| Command::Set(t)),
+            2 => FromPrimitive::from_u32(typ).map(|t| Command::Req(t)),
+            3 => FromPrimitive::from_u32(typ).map(|t| Command::Internal(t)),
             4 => Some(Command::Stream),
             _ => None,
         }

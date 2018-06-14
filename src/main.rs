@@ -3,9 +3,9 @@ extern crate num;
 extern crate num_derive;
 extern crate serialport;
 
-use std::time::Duration;
-use std::io::BufReader;
 use std::io::BufRead;
+use std::io::BufReader;
+use std::time::Duration;
 
 pub mod gateway;
 
@@ -24,5 +24,4 @@ fn main() {
         let message = serial::decode(&buf);
         println!("{:#?}", message);
     }
-
 }

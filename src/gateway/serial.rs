@@ -176,7 +176,10 @@ mod tests {
         let msg = decode(msg_str);
         match msg {
             Ok(_) => panic!("Should return error!"),
-            Err(e) => assert_eq!(format!("{}", e), "Malformed string: 999;999;999;999;999;999\n"),
+            Err(e) => assert_eq!(
+                format!("{}", e),
+                "Malformed string: 999;999;999;999;999;999\n"
+            ),
         }
     }
 }
