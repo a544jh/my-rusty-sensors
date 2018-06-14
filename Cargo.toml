@@ -7,3 +7,4 @@ authors = ["a544jh <axel.wikstrom@gmail.com>"]
 num = "0.1"
 num-traits = "0.2"
 num-derive = "0.2"
+serialport = "2.3.0"

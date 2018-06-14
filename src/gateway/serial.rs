@@ -17,7 +17,7 @@ pub fn encode(msg: &message::Message) -> String {
 }
 
 #[derive(Debug)]
-struct MalformedStringError {
+pub struct MalformedStringError {
     s: String,
 }
 
@@ -39,7 +39,7 @@ impl std::error::Error for MalformedStringError {
     }
 }
 
-fn decode(msg_str: &str) -> Result<message::Message, MalformedStringError> {
+pub fn decode(msg_str: &str) -> Result<message::Message, MalformedStringError> {
     let mal_err_from_opt = { || MalformedStringError::new(&msg_str) };
     let mal_err_from_res = { |_| Err(MalformedStringError::new(&msg_str)) };
     let mut it = msg_str.split(";");
