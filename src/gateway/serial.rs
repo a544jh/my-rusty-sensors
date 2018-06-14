@@ -169,4 +169,14 @@ mod tests {
             Err(e) => assert_eq!(format!("{}", e), "Malformed string: trait-based generics"),
         }
     }
+
+    #[test]
+    fn doesnt_decode_types_out_of_range() {
+        let msg_str = "999;999;999;999;999;999\n";
+        let msg = decode(msg_str);
+        match msg {
+            Ok(_) => panic!("Should return error!"),
+            Err(e) => assert_eq!(format!("{}", e), "Malformed string: 999;999;999;999;999;999\n"),
+        }
+    }
 }
