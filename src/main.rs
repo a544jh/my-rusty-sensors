@@ -7,6 +7,7 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::time::Duration;
 
+pub mod controller;
 pub mod gateway;
 
 use gateway::serial;

@@ -12,7 +12,7 @@ pub struct Message {
     pub payload: PayloadType,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum PayloadType {
     Int(u32),
     Float(f32),
