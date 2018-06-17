@@ -1,6 +1,4 @@
 use super::message;
-use super::message::Kind::*;
-use super::message::Sensor::*;
 use std;
 
 pub fn encode(msg: &message::Message) -> String {

@@ -154,7 +154,7 @@ impl Controller {
                         sensor.sensor_type,
                         lr.kind,
                         lr.value,
-                        lr.timestamp
+                        lr.timestamp.format("%H:%M")
                     )
                 }
             }
