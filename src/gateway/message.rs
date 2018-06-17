@@ -19,6 +19,15 @@ pub enum PayloadType {
     Str(String),
 }
 
+impl PayloadType {
+    pub fn get_str(&self) -> String {
+        match self {
+            PayloadType::Str(s) => s.clone(),
+            _ => String::new(),
+        }
+    }
+}
+
 impl fmt::Display for PayloadType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -44,8 +53,8 @@ impl PayloadType {
 #[derive(Debug, PartialEq)]
 pub enum Command {
     Presentation(Sensor),
-    Set(Payload),
-    Req(Payload),
+    Set(Kind),
+    Req(Kind),
     Internal(Internal),
     Stream,
 }
@@ -132,7 +141,7 @@ pub enum Sensor {
 }
 
 #[derive(Debug, PartialEq, Clone, Copy, FromPrimitive)]
-pub enum Payload {
+pub enum Kind {
     Temperature,
     Humidity,
     Status,

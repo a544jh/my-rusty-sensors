@@ -10,8 +10,8 @@ use std::time::Duration;
 pub mod controller;
 pub mod gateway;
 
-use gateway::serial;
 use controller::Controller;
+use gateway::serial;
 
 fn main() {
     println!("Hello, world!");
@@ -27,12 +27,12 @@ fn main() {
         print!("{}[0;0H", 27 as char);
         let mut buf = String::new();
         let _res = reader.read_line(&mut buf);
-        println!("{}", buf.trim());
         let message = serial::decode(&buf);
         //println!("{:#?}", message);
         if let Ok(msg) = message {
             controller.handle_message(&msg)
         }
         controller.print_status();
+        println!("{}", buf.trim());
     }
 }

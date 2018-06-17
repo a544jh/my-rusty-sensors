@@ -1,4 +1,6 @@
 use super::gateway::message::Command;
+use super::gateway::message::Internal;
+use super::gateway::message::Kind;
 use super::gateway::message::Message;
 use super::gateway::message::PayloadType;
 use super::gateway::message::Sensor as SensorType;
@@ -17,32 +19,53 @@ pub struct Node {
 
 pub struct Sensor {
     id: u32,
-    sensorType: SensorType,
-    lastReading: Option<Reading>,
+    sensor_type: SensorType,
+    description: String,
+    last_reading: Option<Reading>,
 }
 
 #[derive(Debug)]
 pub struct Reading {
     timestamp: time::Instant,
     value: PayloadType,
+    kind: Kind,
 }
 
 impl Controller {
     pub fn new() -> Controller {
-        Controller {
-            nodes: Vec::new()
-        }
+        Controller { nodes: Vec::new() }
     }
 
     pub fn handle_message(&mut self, message: &Message) {
         match message.command {
-            Command::Set(_pl) => {
+            Command::Set(kind) => {
                 let reading = Reading {
                     timestamp: time::Instant::now(),
                     value: message.payload.clone(),
+                    kind,
                 };
-                self.update_sensor(message.node_id, message.child_sensor_id, reading);
+                self.update_sensor(message.node_id, message.child_sensor_id, |s| {
+                    s.last_reading = Some(reading)
+                });
             }
+            Command::Presentation(typ) => {
+                let desc = message.payload.get_str();
+                self.update_sensor(message.node_id, message.child_sensor_id, |s| {
+                    s.sensor_type = typ;
+                    s.description = desc;
+                })
+            }
+            Command::Internal(internal) => match internal {
+                Internal::SketchName => {
+                    let name = message.payload.get_str();
+                    self.update_node(message.node_id, |n| n.name = name)
+                }
+                Internal::SketchVersion => {
+                    let version = message.payload.get_str();
+                    self.update_node(message.node_id, |n| n.version = version)
+                }
+                _ => (),
+            },
             _ => (),
         }
     }
@@ -64,20 +87,44 @@ impl Controller {
         self.find_node(id).unwrap()
     }
 
-    fn update_sensor(&mut self, node_id: u32, child_id: u32, reading: Reading) {
+    fn update_node<F>(&mut self, node_id: u32, func: F)
+    where
+        F: FnOnce(&mut Node),
+    {
+        match self.find_node(node_id) {
+            Some(n) => {
+                func(n);
+                return;
+            }
+            None => (),
+        }
+        let new_node = Node {
+            id: node_id,
+            name: String::new(),
+            version: String::new(),
+            sensors: Vec::new(),
+        };
+        self.add_node(new_node);
+    }
+
+    fn update_sensor<F>(&mut self, node_id: u32, child_id: u32, func: F)
+    where
+        F: FnOnce(&mut Sensor),
+    {
         match self.find_sensor(node_id, child_id) {
             Some(s) => {
-                s.lastReading = Some(reading);
+                func(s);
                 return;
             }
             None => (),
         };
-        let new_sensor = Sensor {
+        let mut new_sensor = Sensor {
             id: child_id,
-            sensorType: SensorType::Door, //TODO, need to get from presentation msg...
-            lastReading: Some(reading),
+            sensor_type: SensorType::Door,
+            description: String::new(),
+            last_reading: None,
         };
-
+        func(&mut new_sensor);
         match self.find_node(node_id) {
             Some(n) => {
                 n.sensors.push(new_sensor);
@@ -88,18 +135,22 @@ impl Controller {
 
         let new_node = Node {
             id: node_id,
-            name: "".to_string(),
-            version: "".to_string(),
+            name: String::new(),
+            version: String::new(),
             sensors: vec![new_sensor],
         };
         self.add_node(new_node);
     }
 
-    pub fn print_status (&self) {
+    pub fn print_status(&self) {
         for node in self.nodes.iter() {
+            println!("{} {} {}", node.id, node.name, node.version);
             for sensor in node.sensors.iter() {
-                if let Some(ref lr) = sensor.lastReading {
-                    println!("{} {} {:?} {:?}", node.id, sensor.id, sensor.sensorType, lr.value)
+                if let Some(ref lr) = sensor.last_reading {
+                    println!(
+                        "  {} {} {:?} {:?} {}",
+                        sensor.id, sensor.description, sensor.sensor_type, lr.kind, lr.value
+                    )
                 }
             }
         }

@@ -1,5 +1,5 @@
 use super::message;
-use super::message::Payload::*;
+use super::message::Kind::*;
 use super::message::Sensor::*;
 use std;
 
