@@ -74,6 +74,8 @@ pub fn decode(msg_str: &str) -> Result<message::Message, MalformedStringError> {
 
 #[cfg(test)]
 mod tests {
+    use super::message::Kind::*;
+    use super::message::Sensor::*;
     use super::message;
     use super::*;
 

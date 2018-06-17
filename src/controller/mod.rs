@@ -19,7 +19,7 @@ pub struct Node {
 
 pub struct Sensor {
     id: u32,
-    sensor_type: SensorType,
+    sensor_type: Option<SensorType>,
     description: String,
     last_reading: Option<Reading>,
 }
@@ -51,7 +51,7 @@ impl Controller {
             Command::Presentation(typ) => {
                 let desc = message.payload.get_str();
                 self.update_sensor(message.node_id, message.child_sensor_id, |s| {
-                    s.sensor_type = typ;
+                    s.sensor_type = Some(typ);
                     s.description = desc;
                 })
             }
@@ -120,7 +120,7 @@ impl Controller {
         };
         let mut new_sensor = Sensor {
             id: child_id,
-            sensor_type: SensorType::Door,
+            sensor_type: None,
             description: String::new(),
             last_reading: None,
         };
