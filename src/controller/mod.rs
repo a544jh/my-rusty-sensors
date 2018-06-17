@@ -4,7 +4,7 @@ use super::gateway::message::Kind;
 use super::gateway::message::Message;
 use super::gateway::message::PayloadType;
 use super::gateway::message::Sensor as SensorType;
-use std::time;
+use chrono::prelude::*;
 
 pub struct Controller {
     nodes: Vec<Node>,
@@ -26,7 +26,7 @@ pub struct Sensor {
 
 #[derive(Debug)]
 pub struct Reading {
-    timestamp: time::Instant,
+    timestamp: DateTime<Utc>,
     value: PayloadType,
     kind: Kind,
 }
@@ -40,7 +40,7 @@ impl Controller {
         match message.command {
             Command::Set(kind) => {
                 let reading = Reading {
-                    timestamp: time::Instant::now(),
+                    timestamp: Utc::now(),
                     value: message.payload.clone(),
                     kind,
                 };
@@ -148,8 +148,13 @@ impl Controller {
             for sensor in node.sensors.iter() {
                 if let Some(ref lr) = sensor.last_reading {
                     println!(
-                        "  {} {} {:?} {:?} {}",
-                        sensor.id, sensor.description, sensor.sensor_type, lr.kind, lr.value
+                        "  {} {} {:?} {:?} {} {}",
+                        sensor.id,
+                        sensor.description,
+                        sensor.sensor_type,
+                        lr.kind,
+                        lr.value,
+                        lr.timestamp
                     )
                 }
             }

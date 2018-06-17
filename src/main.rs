@@ -1,6 +1,7 @@
 extern crate num;
 #[macro_use]
 extern crate num_derive;
+extern crate chrono;
 extern crate serialport;
 
 use std::io::BufRead;
