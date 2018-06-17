@@ -18,18 +18,25 @@ pub struct Node {
 pub struct Sensor {
     id: u32,
     sensorType: SensorType,
-    lastReading: Reading,
+    lastReading: Option<Reading>,
 }
 
+#[derive(Debug)]
 pub struct Reading {
     timestamp: time::Instant,
     value: PayloadType,
 }
 
 impl Controller {
+    pub fn new() -> Controller {
+        Controller {
+            nodes: Vec::new()
+        }
+    }
+
     pub fn handle_message(&mut self, message: &Message) {
         match message.command {
-            Command::Set(pl) => {
+            Command::Set(_pl) => {
                 let reading = Reading {
                     timestamp: time::Instant::now(),
                     value: message.payload.clone(),
@@ -40,35 +47,61 @@ impl Controller {
         }
     }
 
-    fn get_node(&mut self, node_id: u32) -> &mut Node {
-        if let Some(nod) = self.nodes.iter_mut().find(|n| n.id == node_id) {
-            return nod;
+    fn find_node(&mut self, node_id: u32) -> Option<&mut Node> {
+        self.nodes.iter_mut().find(|n| n.id == node_id)
+    }
+
+    fn find_sensor(&mut self, node_id: u32, child_id: u32) -> Option<&mut Sensor> {
+        match self.find_node(node_id) {
+            None => None,
+            Some(n) => n.sensors.iter_mut().find(|s| s.id == child_id),
         }
+    }
+
+    fn add_node(&mut self, node: Node) -> &mut Node {
+        let id = node.id;
+        self.nodes.push(node);
+        self.find_node(id).unwrap()
+    }
+
+    fn update_sensor(&mut self, node_id: u32, child_id: u32, reading: Reading) {
+        match self.find_sensor(node_id, child_id) {
+            Some(s) => {
+                s.lastReading = Some(reading);
+                return;
+            }
+            None => (),
+        };
+        let new_sensor = Sensor {
+            id: child_id,
+            sensorType: SensorType::Door, //TODO, need to get from presentation msg...
+            lastReading: Some(reading),
+        };
+
+        match self.find_node(node_id) {
+            Some(n) => {
+                n.sensors.push(new_sensor);
+                return;
+            }
+            None => (),
+        }
+
         let new_node = Node {
             id: node_id,
             name: "".to_string(),
             version: "".to_string(),
-            sensors: Vec::new(),
+            sensors: vec![new_sensor],
         };
-        self.nodes.push(new_node);
-        self.nodes.iter_mut().find(|n| n.id == node_id).unwrap()
+        self.add_node(new_node);
     }
 
-    fn update_sensor(&mut self, node_id: u32, child_id: u32, reading: Reading) {
-        let node = self.get_node(node_id);
-
-        match node.sensors.iter_mut().find(|s| s.id == child_id) {
-            Some(mut s) => {
-                s.lastReading = reading;
+    pub fn print_status (&self) {
+        for node in self.nodes.iter() {
+            for sensor in node.sensors.iter() {
+                if let Some(ref lr) = sensor.lastReading {
+                    println!("{} {} {:?} {:?}", node.id, sensor.id, sensor.sensorType, lr.value)
+                }
             }
-            None => {
-                let new_sensor = Sensor {
-                    id: child_id,
-                    sensorType: SensorType::Door, //TODO, need to get from presentation msg...
-                    lastReading: reading,
-                };
-                node.sensors.push(new_sensor);
-            }
-        };
+        }
     }
 }
