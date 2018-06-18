@@ -147,11 +147,15 @@ impl Controller {
             println!("{} {} {}", node.id, node.name, node.version);
             for sensor in node.sensors.iter() {
                 if let Some(ref lr) = sensor.last_reading {
+                    let typ = match sensor.sensor_type {
+                        None => String::from("Unknown"),
+                        Some(t) => format!("{:?}", t)
+                    };
                     println!(
-                        "  {} {} {:?} {:?} {} {}",
+                        "  {} {} {} {:?} {} {}",
                         sensor.id,
                         sensor.description,
-                        sensor.sensor_type,
+                        typ,
                         lr.kind,
                         lr.value,
                         lr.timestamp.format("%H:%M")
