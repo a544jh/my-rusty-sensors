@@ -21,11 +21,14 @@ impl super::Gateway for SerialGateway {
     fn receive(&mut self) -> Result<message::Message, MalformedStringError> {
         let mut buf = String::new();
         let _res = self.buf.read_line(&mut buf);
+        println!("Received {:?}", buf);
         decode(&buf)
     }
 
     fn send(&mut self, message: &message::Message) {
-        let _res = self.buf.write(encode(message).as_bytes());
+        let msg = encode(message);
+        println!("Sent {:?}", msg);
+        let _res = self.buf.write(msg.as_bytes());
     }
 }
 

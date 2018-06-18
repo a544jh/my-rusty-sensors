@@ -47,15 +47,17 @@ impl Controller {
             print!("{}[2J", 27 as char);
             print!("{}[0;0H", 27 as char);;
             let message = self.gateway.receive();
-            if let Ok(msg) = message {
-                self.handle_message(&msg)
+            match message {
+                Ok(msg) =>  self.handle_message(&msg),
+                Err(e) => println!("{}", e),
             }
+            self.request_unknown_sensors();
             self.print_status();
             //println!("{}", buf.trim()); //TODO: maybe implement Gateway::rawMessage or smth...
         }
     }
 
-    pub fn handle_message(&mut self, message: &Message) {
+    fn handle_message(&mut self, message: &Message) {
         match message.command {
             Command::Set(kind) => {
                 let reading = Reading {
@@ -86,6 +88,23 @@ impl Controller {
                 _ => (),
             },
             _ => (),
+        }
+    }
+
+    fn request_unknown_sensors(&mut self) {
+        for node in self.nodes.iter() {
+            for sensor in node.sensors.iter() {
+                if let None = sensor.sensor_type {
+                    let msg = Message {
+                        node_id: node.id,
+                        child_sensor_id: sensor.id,
+                        command: Command::Internal(Internal::Presentation),
+                        ack: true,
+                        payload: PayloadType::Str(String::new()),
+                    };
+                    self.gateway.send(&msg)
+                }
+            }
         }
     }
 
