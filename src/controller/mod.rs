@@ -4,9 +4,11 @@ use super::gateway::message::Kind;
 use super::gateway::message::Message;
 use super::gateway::message::PayloadType;
 use super::gateway::message::Sensor as SensorType;
+use super::gateway::Gateway;
 use chrono::prelude::*;
 
 pub struct Controller {
+    gateway: Box<Gateway>,
     nodes: Vec<Node>,
 }
 
@@ -32,8 +34,25 @@ pub struct Reading {
 }
 
 impl Controller {
-    pub fn new() -> Controller {
-        Controller { nodes: Vec::new() }
+    pub fn new(gateway: Box<Gateway>) -> Controller {
+        Controller {
+            gateway,
+            nodes: Vec::new(),
+        }
+    }
+
+    pub fn run(&mut self) {
+        loop {
+            //clear terminal
+            print!("{}[2J", 27 as char);
+            print!("{}[0;0H", 27 as char);;
+            let message = self.gateway.receive();
+            if let Ok(msg) = message {
+                self.handle_message(&msg)
+            }
+            self.print_status();
+            //println!("{}", buf.trim()); //TODO: maybe implement Gateway::rawMessage or smth...
+        }
     }
 
     pub fn handle_message(&mut self, message: &Message) {
@@ -149,7 +168,7 @@ impl Controller {
                 if let Some(ref lr) = sensor.last_reading {
                     let typ = match sensor.sensor_type {
                         None => String::from("Unknown"),
-                        Some(t) => format!("{:?}", t)
+                        Some(t) => format!("{:?}", t),
                     };
                     println!(
                         "  {} {} {} {:?} {} {}",

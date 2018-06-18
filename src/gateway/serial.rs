@@ -1,5 +1,33 @@
 use super::message;
+use bufstream::BufStream;
+use serialport::SerialPort;
 use std;
+use std::io::BufRead;
+use std::io::Write;
+
+pub struct SerialGateway {
+    buf: BufStream<Box<SerialPort>>,
+}
+
+impl SerialGateway {
+    pub fn new(port: Box<SerialPort>) -> SerialGateway {
+        SerialGateway {
+            buf: BufStream::new(port),
+        }
+    }
+}
+
+impl super::Gateway for SerialGateway {
+    fn receive(&mut self) -> Result<message::Message, MalformedStringError> {
+        let mut buf = String::new();
+        let _res = self.buf.read_line(&mut buf);
+        decode(&buf)
+    }
+
+    fn send(&mut self, message: &message::Message) {
+        let _res = self.buf.write(encode(message).as_bytes());
+    }
+}
 
 pub fn encode(msg: &message::Message) -> String {
     let command = &msg.command;
@@ -74,9 +102,9 @@ pub fn decode(msg_str: &str) -> Result<message::Message, MalformedStringError> {
 
 #[cfg(test)]
 mod tests {
+    use super::message;
     use super::message::Kind::*;
     use super::message::Sensor::*;
-    use super::message;
     use super::*;
 
     #[test]
