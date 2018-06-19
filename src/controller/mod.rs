@@ -10,6 +10,7 @@ use chrono::prelude::*;
 pub struct Controller {
     gateway: Box<Gateway>,
     nodes: Vec<Node>,
+    presentation_request_skips: u32,
 }
 
 pub struct Node {
@@ -38,6 +39,7 @@ impl Controller {
         Controller {
             gateway,
             nodes: Vec::new(),
+            presentation_request_skips: 0,
         }
     }
 
@@ -48,7 +50,7 @@ impl Controller {
             print!("{}[0;0H", 27 as char);;
             let message = self.gateway.receive();
             match message {
-                Ok(msg) =>  self.handle_message(&msg),
+                Ok(msg) => self.handle_message(&msg),
                 Err(e) => println!("{}", e),
             }
             self.request_unknown_sensors();
@@ -102,7 +104,14 @@ impl Controller {
                         ack: true,
                         payload: PayloadType::Str(String::new()),
                     };
-                    self.gateway.send(&msg)
+                    // don't spam that poor arduino... (TODO: this properly (with some sensor state maybe...))
+                    // the replies will eventually arrive
+                    if self.presentation_request_skips > 0 {
+                        self.presentation_request_skips -= 1;
+                        return;
+                    }
+                    self.presentation_request_skips = 20;
+                    self.gateway.send(&msg);
                 }
             }
         }

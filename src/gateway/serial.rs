@@ -29,6 +29,7 @@ impl super::Gateway for SerialGateway {
         let msg = encode(message);
         println!("Sent {:?}", msg);
         let _res = self.buf.write(msg.as_bytes());
+        let _res = self.buf.flush();
     }
 }
 
