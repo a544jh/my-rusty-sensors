@@ -29,7 +29,7 @@ pub struct Sensor {
 
 #[derive(Debug)]
 pub struct Reading {
-    timestamp: DateTime<Utc>,
+    timestamp: DateTime<Local>,
     value: PayloadType,
     kind: Kind,
 }
@@ -63,7 +63,7 @@ impl Controller {
         match message.command {
             Command::Set(kind) => {
                 let reading = Reading {
-                    timestamp: Utc::now(),
+                    timestamp: Local::now(),
                     value: message.payload.clone(),
                     kind,
                 };
