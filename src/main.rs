@@ -3,24 +3,37 @@ extern crate num;
 extern crate num_derive;
 extern crate bufstream;
 extern crate chrono;
+extern crate rusqlite;
 extern crate serialport;
 
 use std::time::Duration;
 
 pub mod controller;
 pub mod gateway;
+pub mod persistance;
 
 use controller::Controller;
 use gateway::serial::SerialGateway;
+use persistance::sqlite;
 
 fn main() {
     println!("Hello, world!");
-    let mut port = serialport::open("/dev/ttyUSB0").unwrap();
-    let _ = port.set_baud_rate(serialport::BaudRate::Baud115200);
-    let _ = port.set_timeout(Duration::from_secs(200));
+    //let mut port = serialport::open("/dev/ttyUSB0").unwrap();
+    //let _ = port.set_baud_rate(serialport::BaudRate::Baud115200);
+    //let _ = port.set_timeout(Duration::from_secs(200));
+    //
+    //let gateway = Box::new(SerialGateway::new(port));
+    //let mut controller = Controller::new(gateway);
+    //
+    //controller.run();
 
-    let gateway = Box::new(SerialGateway::new(port));
-    let mut controller = Controller::new(gateway);
-
-    controller.run();
+    let per = sqlite::SqlitePersist::new().unwrap();
+    let per_i: &persistance::Persist = &per;
+    let node = controller::Node {
+        id: 1,
+        name: String::from("asd"),
+        version: String::from("1.0"),
+        sensors: Vec::new(),
+    };
+    per_i.store_node(&node);
 }

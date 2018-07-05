@@ -14,10 +14,10 @@ pub struct Controller {
 }
 
 pub struct Node {
-    id: u32,
-    name: String,
-    version: String,
-    sensors: Vec<Sensor>,
+    pub id: u32,
+    pub name: String,
+    pub version: String,
+    pub sensors: Vec<Sensor>,
 }
 
 pub struct Sensor {
