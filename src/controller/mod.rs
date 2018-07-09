@@ -5,11 +5,13 @@ use super::gateway::message::Message;
 use super::gateway::message::PayloadType;
 use super::gateway::message::Sensor as SensorType;
 use super::gateway::Gateway;
+use super::persistance;
 use chrono::prelude::*;
 
 pub struct Controller {
     gateway: Box<Gateway>,
     nodes: Vec<Node>,
+    persist: Option<Box<persistance::Persist>>,
     presentation_request_skips: u32,
 }
 
@@ -20,6 +22,17 @@ pub struct Node {
     pub sensors: Vec<Sensor>,
 }
 
+impl Node {
+    fn new(id: u32) -> Node {
+        Node {
+            id: id,
+            name: String::new(),
+            version: String::new(),
+            sensors: Vec::new(),
+        }
+    }
+}
+
 pub struct Sensor {
     id: u32,
     sensor_type: Option<SensorType>,
@@ -27,7 +40,7 @@ pub struct Sensor {
     last_reading: Option<Reading>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Reading {
     timestamp: DateTime<Local>,
     value: PayloadType,
@@ -39,8 +52,13 @@ impl Controller {
         Controller {
             gateway,
             nodes: Vec::new(),
+            persist: None,
             presentation_request_skips: 0,
         }
+    }
+
+    pub fn attach_persist(&mut self, persist: Box<persistance::Persist>) {
+        self.persist = Some(persist)
     }
 
     pub fn run(&mut self) {
@@ -68,24 +86,33 @@ impl Controller {
                     kind,
                 };
                 self.update_sensor(message.node_id, message.child_sensor_id, |s| {
-                    s.last_reading = Some(reading)
+                    s.last_reading = Some(reading.clone())
                 });
+
+                self.persist_node(message.node_id);
+                self.persist_sensor(message.node_id, message.child_sensor_id);
+                self.persist_reading(message.node_id, message.child_sensor_id, &reading)
             }
             Command::Presentation(typ) => {
                 let desc = message.payload.get_str();
                 self.update_sensor(message.node_id, message.child_sensor_id, |s| {
                     s.sensor_type = Some(typ);
                     s.description = desc;
-                })
+                });
+
+                self.persist_node(message.node_id);
+                self.persist_sensor(message.node_id, message.child_sensor_id);
             }
             Command::Internal(internal) => match internal {
                 Internal::SketchName => {
                     let name = message.payload.get_str();
-                    self.update_node(message.node_id, |n| n.name = name)
+                    self.update_node(message.node_id, |n| n.name = name);
+                    self.persist_node(message.node_id);
                 }
                 Internal::SketchVersion => {
                     let version = message.payload.get_str();
-                    self.update_node(message.node_id, |n| n.version = version)
+                    self.update_node(message.node_id, |n| n.version = version);
+                    self.persist_node(message.node_id);
                 }
                 _ => (),
             },
@@ -117,40 +144,45 @@ impl Controller {
         }
     }
 
-    fn find_node(&mut self, node_id: u32) -> Option<&mut Node> {
+    fn find_node(&self, node_id: u32) -> Option<&Node> {
+        self.nodes.iter().find(|n| n.id == node_id)
+    }
+
+    fn find_node_mut(&mut self, node_id: u32) -> Option<&mut Node> {
         self.nodes.iter_mut().find(|n| n.id == node_id)
     }
 
-    fn find_sensor(&mut self, node_id: u32, child_id: u32) -> Option<&mut Sensor> {
+    fn find_sensor(&self, node_id: u32, child_id: u32) -> Option<&Sensor> {
         match self.find_node(node_id) {
+            None => None,
+            Some(n) => n.sensors.iter().find(|s| s.id == child_id),
+        }
+    }
+
+    fn find_sensor_mut(&mut self, node_id: u32, child_id: u32) -> Option<&mut Sensor> {
+        match self.find_node_mut(node_id) {
             None => None,
             Some(n) => n.sensors.iter_mut().find(|s| s.id == child_id),
         }
     }
 
-    fn add_node(&mut self, node: Node) -> &mut Node {
-        let id = node.id;
+    fn add_node(&mut self, node: Node) {
         self.nodes.push(node);
-        self.find_node(id).unwrap()
     }
 
     fn update_node<F>(&mut self, node_id: u32, func: F)
     where
         F: FnOnce(&mut Node),
     {
-        match self.find_node(node_id) {
+        match self.find_node_mut(node_id) {
             Some(n) => {
                 func(n);
                 return;
             }
             None => (),
         }
-        let new_node = Node {
-            id: node_id,
-            name: String::new(),
-            version: String::new(),
-            sensors: Vec::new(),
-        };
+        let mut new_node = Node::new(node_id);
+        func(&mut new_node);
         self.add_node(new_node);
     }
 
@@ -158,7 +190,7 @@ impl Controller {
     where
         F: FnOnce(&mut Sensor),
     {
-        match self.find_sensor(node_id, child_id) {
+        match self.find_sensor_mut(node_id, child_id) {
             Some(s) => {
                 func(s);
                 return;
@@ -172,7 +204,7 @@ impl Controller {
             last_reading: None,
         };
         func(&mut new_sensor);
-        match self.find_node(node_id) {
+        match self.find_node_mut(node_id) {
             Some(n) => {
                 n.sensors.push(new_sensor);
                 return;
@@ -187,6 +219,46 @@ impl Controller {
             sensors: vec![new_sensor],
         };
         self.add_node(new_node);
+    }
+
+    fn persist_node(&self, node_id: u32) {
+        if let Some(ref p) = self.persist {
+            if let Some(n) = self.find_node(node_id) {
+                let nod = persistance::Node {
+                    id: n.id,
+                    name: n.name.clone(),
+                    version: n.version.clone(),
+                };
+                p.store_node(&nod);
+            }
+        }
+    }
+
+    fn persist_sensor(&self, node_id: u32, child_id: u32) {
+        if let Some(ref p) = self.persist {
+            if let Some(s) = self.find_sensor(node_id, child_id) {
+                let sens = persistance::Sensor {
+                    id: child_id,
+                    node_id: node_id,
+                    sensor_type:s.sensor_type.map(|t| t as u32),
+                    description: s.description.clone(),
+                };
+                p.store_sensor(&sens);
+            }
+        }
+    }
+
+    fn persist_reading(&self, node_id: u32, child_id: u32, reading: &Reading) {
+        if let Some(ref p) = self.persist {
+            let r = persistance::Reading {
+                node_id: node_id,
+                sensor_id: child_id,
+                timestamp: reading.timestamp,
+                value: reading.value.to_string(),
+                kind: reading.kind as u32,
+            };
+            p.store_reading(&r);
+        }
     }
 
     pub fn print_status(&self) {

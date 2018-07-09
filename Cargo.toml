@@ -10,4 +10,4 @@ num-derive = "0.2"
 serialport = "2.3.0"
 chrono = "0.4.3"
 bufstream = "0.1"
-rusqlite = "0.13.0"
+rusqlite = { version = "0.13.0", features = ["chrono"] }

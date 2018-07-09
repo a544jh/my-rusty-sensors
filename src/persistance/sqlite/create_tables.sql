@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS readings (
     node_id INTEGER,
     sensor_id INTEGER,
     timestamp DATETIME,
-    value NUMBER,
+    value TEXT,
     kind TEXT,
     FOREIGN KEY(node_id) REFERENCES nodes(id)
 );

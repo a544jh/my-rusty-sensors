@@ -14,26 +14,18 @@ pub mod persistance;
 
 use controller::Controller;
 use gateway::serial::SerialGateway;
-use persistance::sqlite;
+use persistance::sqlite::SqlitePersist;
 
 fn main() {
     println!("Hello, world!");
-    //let mut port = serialport::open("/dev/ttyUSB0").unwrap();
-    //let _ = port.set_baud_rate(serialport::BaudRate::Baud115200);
-    //let _ = port.set_timeout(Duration::from_secs(200));
-    //
-    //let gateway = Box::new(SerialGateway::new(port));
-    //let mut controller = Controller::new(gateway);
-    //
-    //controller.run();
+    let mut port = serialport::open("/dev/ttyUSB0").unwrap();
+    let _ = port.set_baud_rate(serialport::BaudRate::Baud115200);
+    let _ = port.set_timeout(Duration::from_secs(200));
 
-    let per = sqlite::SqlitePersist::new().unwrap();
-    let per_i: &persistance::Persist = &per;
-    let node = controller::Node {
-        id: 1,
-        name: String::from("asd"),
-        version: String::from("1.0"),
-        sensors: Vec::new(),
-    };
-    per_i.store_node(&node);
+    let gateway = Box::new(SerialGateway::new(port));
+    let mut controller = Controller::new(gateway);
+
+    controller.attach_persist(Box::new(SqlitePersist::new("mysensors.sqlite").unwrap()));
+
+    controller.run();
 }
