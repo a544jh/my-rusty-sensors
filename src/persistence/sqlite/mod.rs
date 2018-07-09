@@ -1,4 +1,4 @@
-use persistance;
+use persistence;
 use rusqlite;
 use std::path::Path;
 
@@ -24,17 +24,17 @@ impl SqlitePersist {
     }
 }
 
-impl persistance::Persist for SqlitePersist {
+impl persistence::Persist for SqlitePersist {
     //TODO: add error handling
 
-    fn store_node(&self, node: &persistance::Node) {
+    fn store_node(&self, node: &persistence::Node) {
         self.conn.execute(
             "REPLACE INTO nodes (id, name, version) VALUES (?1, ?2, ?3)",
             &[&node.id, &node.name, &node.version],
         );
     }
 
-    fn store_sensor(&self, sensor: &persistance::Sensor) {
+    fn store_sensor(&self, sensor: &persistence::Sensor) {
         self.conn.execute(
             "REPLACE INTO sensors (id, node_id, type, description) VALUES (?1, ?2, ?3, ?4)",
             &[
@@ -46,7 +46,7 @@ impl persistance::Persist for SqlitePersist {
         );
     }
 
-    fn store_reading(&self, reading: &persistance::Reading) {
+    fn store_reading(&self, reading: &persistence::Reading) {
         self.conn.execute("INSERT INTO readings (node_id, sensor_id, timestamp, value, kind) VALUES (?1, ?2, ?3, ?4, ?5)", 
         &[&reading.node_id, &reading.sensor_id, &reading.timestamp, &reading.value, &reading.kind]);
     }

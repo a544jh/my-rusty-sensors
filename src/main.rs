@@ -10,11 +10,11 @@ use std::time::Duration;
 
 pub mod controller;
 pub mod gateway;
-pub mod persistance;
+pub mod persistence;
 
 use controller::Controller;
 use gateway::serial::SerialGateway;
-use persistance::sqlite::SqlitePersist;
+use persistence::sqlite::SqlitePersist;
 
 fn main() {
     println!("Hello, world!");

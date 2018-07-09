@@ -5,13 +5,13 @@ use super::gateway::message::Message;
 use super::gateway::message::PayloadType;
 use super::gateway::message::Sensor as SensorType;
 use super::gateway::Gateway;
-use super::persistance;
+use super::persistence;
 use chrono::prelude::*;
 
 pub struct Controller {
     gateway: Box<Gateway>,
     nodes: Vec<Node>,
-    persist: Option<Box<persistance::Persist>>,
+    persist: Option<Box<persistence::Persist>>,
     presentation_request_skips: u32,
 }
 
@@ -57,7 +57,7 @@ impl Controller {
         }
     }
 
-    pub fn attach_persist(&mut self, persist: Box<persistance::Persist>) {
+    pub fn attach_persist(&mut self, persist: Box<persistence::Persist>) {
         self.persist = Some(persist)
     }
 
@@ -239,7 +239,7 @@ impl Controller {
     fn persist_node(&self, node_id: u32) {
         if let Some(ref p) = self.persist {
             if let Some(n) = self.find_node(node_id) {
-                let nod = persistance::Node {
+                let nod = persistence::Node {
                     id: n.id,
                     name: n.name.clone(),
                     version: n.version.clone(),
@@ -252,7 +252,7 @@ impl Controller {
     fn persist_sensor(&self, node_id: u32, child_id: u32) {
         if let Some(ref p) = self.persist {
             if let Some(s) = self.find_sensor(node_id, child_id) {
-                let sens = persistance::Sensor {
+                let sens = persistence::Sensor {
                     id: child_id,
                     node_id: node_id,
                     sensor_type: s.sensor_type.map(|t| t as u32),
@@ -265,7 +265,7 @@ impl Controller {
 
     fn persist_reading(&self, node_id: u32, child_id: u32, reading: &Reading) {
         if let Some(ref p) = self.persist {
-            let r = persistance::Reading {
+            let r = persistence::Reading {
                 node_id: node_id,
                 sensor_id: child_id,
                 timestamp: reading.timestamp,
