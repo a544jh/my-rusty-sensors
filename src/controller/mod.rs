@@ -85,13 +85,28 @@ impl Controller {
                     value: message.payload.clone(),
                     kind,
                 };
+
+                let mut reading_changed = true;
+
+                // only persist when reading changes
+                if let Some(ref s) = self.find_sensor(message.node_id, message.child_sensor_id) {
+                    if let Some(ref lr) = s.last_reading {
+                        if reading.value == lr.value && reading.kind == lr.kind {
+                            reading_changed = false;
+                        }
+                    }
+                }
+
                 self.update_sensor(message.node_id, message.child_sensor_id, |s| {
                     s.last_reading = Some(reading.clone())
                 });
 
                 self.persist_node(message.node_id);
                 self.persist_sensor(message.node_id, message.child_sensor_id);
-                self.persist_reading(message.node_id, message.child_sensor_id, &reading)
+
+                if reading_changed {
+                    self.persist_reading(message.node_id, message.child_sensor_id, &reading)
+                }
             }
             Command::Presentation(typ) => {
                 let desc = message.payload.get_str();
@@ -240,7 +255,7 @@ impl Controller {
                 let sens = persistance::Sensor {
                     id: child_id,
                     node_id: node_id,
-                    sensor_type:s.sensor_type.map(|t| t as u32),
+                    sensor_type: s.sensor_type.map(|t| t as u32),
                     description: s.description.clone(),
                 };
                 p.store_sensor(&sens);
